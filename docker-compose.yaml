@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: blnk_django_app
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - .:/app  # Mount the current directory to the container
+      - ./db.sqlite3:/app/db.sqlite3  # Mount the database file to the container
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
