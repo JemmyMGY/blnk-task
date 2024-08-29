@@ -1,27 +1,38 @@
-from django.shortcuts import render
-from rest_framework.authtoken.models import Token
+import decimal
 
 from rest_framework.response import Response
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
 from .serializers import CustomerSerializer, LoanRequestSerializer, LoginSerializer
 from .models import Customer, LoanRequest
+from bank.models import Loan, Payment
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth.hashers import check_password
 
 
-# @api_view(['POST'])
-# def make_payment(request, customer_id, loan_id):
-#     try:
-#         customer = Customer.objects.get(id=customer_id)
-#         loan = LoanRequest.objects.get(id=loan_id)
-#         if customer.balance >= loan.amount:
-#             customer.balance -= loan.amount
-#             customer.save()
-#             loan.status = "PAID"
-#             loan.save()
-#             return Response({"message": "Payment successful"}, status=200)
-#         else:
-#             return Response({"message": "Insufficient balance"}, status=400)
+@api_view(['POST'])
+def make_payment(request, loan_request_id, customer_id):
+    loan_payment = decimal.Decimal(float(request.data.get('payment_amount')))
+    try:
+        loan_request = LoanRequest.objects.get(id=loan_request_id)
+        if loan_request.status == "REJECTED":
+            return Response({"error": "Loan request has been rejected and you can't pay for rejected loan"}, status=400)
+        elif loan_request.status == "PENDING":
+            return Response({"error": "Loan request has not been approved yet"}, status=400)
+
+        loan = Loan.objects.get(loan_request=loan_request)
+        if loan_payment > loan.remaining_amount :
+            return Response({"error": "Payment amount exceeds remaining loan amount"}, status=400)
+
+        loan.remaining_amount -= loan_payment
+        loan.paid_amount += loan_payment
+        loan.save()
+        Payment(customer=loan.customer, loan=loan, paid_amount=loan_payment).save()
+        return Response({"message": "Payment successful"}, status=200)
+    except Exception as e:
+        error = {
+            "error message": str(e)
+        }
+        return Response(error, status=400)
 
 @api_view(['GET'])
 def list_customer_loan_requests(request, customer_id):
@@ -37,7 +48,9 @@ def list_customer_loan_requests(request, customer_id):
 
 @api_view(['POST'])
 def request_loan(request, customer_id):
-    loan_data = request.data
+    loan_data = {}
+    loan_data['amount'] = request.data.get('amount')
+    loan_data['duration'] = request.data.get('duration')
     loan_data['customer'] = customer_id
     loan_serializer = LoanRequestSerializer(data=loan_data)
 

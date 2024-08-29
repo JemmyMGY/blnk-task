@@ -1,8 +1,7 @@
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
-from customers.models import Customer
-
+from customers.models import Customer, LoanRequest
 
 
 class Provider(models.Model):
@@ -23,13 +22,27 @@ class Loan(models.Model):
         ("REJECTED", "REJECTED"),
     )
     id = models.AutoField(primary_key=True)
+    loan_request = models.OneToOneField(LoanRequest, on_delete=models.CASCADE)
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
     provider = models.ForeignKey(Provider, on_delete=models.CASCADE)
-    amount = models.DecimalField(max_digits=9, decimal_places=2)
+    total_amount = models.DecimalField(max_digits=9, decimal_places=2)
+    remaining_amount = models.DecimalField(max_digits=9, decimal_places=2, default=total_amount)
+    paid_amount = models.DecimalField(max_digits=9, decimal_places=2, default=0)
     interest_rate = models.DecimalField(max_digits=2, decimal_places=2, default=.20)
     duration = models.IntegerField(validators=[MaxValueValidator(120),MinValueValidator(12)])
     created_at = models.DateTimeField(default=timezone.now)
     status = models.CharField(max_length=8, choices=STATUS_OPTIONS, default="PENDING")
 
     def __str__(self) -> str:
-        return f'{self.id} => {self.customer.id} - {self.amount} - {self.interest_rate} - {self.duration} || {self.status}'
+        return f'{self.id}'
+
+
+class Payment(models.Model):
+    id = models.AutoField(primary_key=True)
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE)
+    loan = models.ForeignKey(Loan, on_delete=models.CASCADE)
+    paid_amount = models.DecimalField(max_digits=9, decimal_places=2)
+    paid_at = models.DateTimeField(default=timezone.now)
+
+    def __str__(self) -> str:
+        return f'{self.id}'

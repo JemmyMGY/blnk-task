@@ -7,15 +7,15 @@
 
 
 ## Installation
-you need to build the docker image and run the container
+please make sure **_Docker_** is installed on your machine to build the docker image and run the container.
 1. build the image
-```bash
-docker-compose build
-```
+    ```bash
+    docker-compose build
+    ```
 2. run the container
-```bash
-docker-compose up
-```
+    ```bash
+    docker-compose up
+    ```
 
 ## Postman collection
 - please find the postman collection in the root directory of the project with name `blnk.postman_collection.json`

@@ -28,14 +28,14 @@ def handle_bank_loan_request(loan_request):
     try:
         provider = Provider.objects.get(id=BLNK_PROVIDER_ID)
         bank_loan = Loan(
+            loan_request=loan_request,
             customer=loan_request.customer,
             provider=provider,
-            amount=loan_request.amount,
+            total_amount=loan_request.amount,
             status=loan_request.status,
             duration=loan_request.duration,
         )
         bank_loan.save()
-        provider.total_fund -= loan_request.amount
         provider.total_fund -= loan_request.amount
         provider.save()
 
